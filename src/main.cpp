@@ -101,8 +101,8 @@ int main() {
 		  vector<double> waypoints_x;
 		  vector<double> waypoints_y;
 		  //convert from map coordinate to vehicle coordinate
-		  int pintsize = ptsx.size();
-		  cout << "size" << pintsize << endl;
+		  int pointsize = ptsx.size();
+		  cout << "size" << pointsize << endl;
 		  
 		  for (int i =0; i < ptsx.size(); i++ )
 		  {
@@ -114,6 +114,21 @@ int main() {
 			waypoints_x.push_back(x_converted);
 			waypoints_y.push_back(y_converted);
 		  }
+
+		  auto coeffs = polyfit(waypoints_x, waypoints_y, 3);
+		  // cte is calculate at x=0 position in vehicle coordinate
+		  double cte = polyeval(coeffs, 0 );
+		  //epsi is the the atan of the derivative at x=0 position
+		  double epsi = atan(coeffs[1]);
+
+		  Eigen::VectorXd state(6); 
+		  //consider the state in vehicle coordinate, x, y and psi would be zero for the ego vehicle itself
+		  state << 0, 0, 0, v, cte, epsi;          
+		  auto vars = mpc.Solve(state, coeffs);          
+		  steer_value = vars[0];          
+		  throttle_value = vars[1];
+
+		  
 
 		  
 		  
@@ -132,6 +147,18 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
+	      for (int i = 2; i < vars.size(); i ++) 
+		  {            
+		  	if (i%2 == 0) 
+			{              
+				mpc_x_vals.push_back(vars[i]);            
+			}            
+			else 
+			{              
+				mpc_y_vals.push_back(vars[i]);            
+			}          
+		  }
+		  
 
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
@@ -142,10 +169,16 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
+          for (double i = 0; i < 100; i += 3)
+		  {            
+		  	next_x_vals.push_back(i);            
+			next_y_vals.push_back(polyeval(coeffs, i));          
+		  }
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
 
+			
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
