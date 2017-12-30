@@ -101,6 +101,9 @@ int main() {
 		  vector<double> waypoints_x;
 		  vector<double> waypoints_y;
 		  //convert from map coordinate to vehicle coordinate
+		  int pintsize = ptsx.size();
+		  cout << "size" << pintsize << endl;
+		  
 		  for (int i =0; i < ptsx.size(); i++ )
 		  {
 		  	double dx = ptsx[i] - px;            
@@ -108,8 +111,8 @@ int main() {
 
 			double x_converted = dx * cos(-psi) - dy * sin(-psi);
 			double y_converted = dx * sin(-psi) + dy * cos(-psi);
-			waypoints_x.push(x_converted);
-			waypoints_y.push(y_converted);
+			waypoints_x.push_back(x_converted);
+			waypoints_y.push_back(y_converted);
 		  }
 
 		  
