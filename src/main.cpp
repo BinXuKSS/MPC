@@ -98,10 +98,11 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-		  vector<double> waypoints_x;
-		  vector<double> waypoints_y;
+          int pointsize = ptsx.size();
+		  Eigen::VectorXd waypoints_x(pointsize);
+		  Eigen::VectorXd waypoints_y(pointsize);
 		  //convert from map coordinate to vehicle coordinate
-		  int pointsize = ptsx.size();
+		  
 		  cout << "size" << pointsize << endl;
 		  
 		  for (int i =0; i < ptsx.size(); i++ )
