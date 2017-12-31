@@ -110,10 +110,8 @@ int main() {
 		  	double dx = ptsx[i] - px;            
 		    double dy = ptsy[i] - py;
 
-			double x_converted = dx * cos(-psi) - dy * sin(-psi);
-			double y_converted = dx * sin(-psi) + dy * cos(-psi);
-			waypoints_x.push_back(x_converted);
-			waypoints_y.push_back(y_converted);
+			waypoints_x[i] = dx * cos(-psi) - dy * sin(-psi);
+			waypoints_y[i] = dx * sin(-psi) + dy * cos(-psi);
 		  }
 
 		  auto coeffs = polyfit(waypoints_x, waypoints_y, 3);
