@@ -124,15 +124,8 @@ int main() {
 		  //consider the state in vehicle coordinate, x, y and psi would be zero for the ego vehicle itself
 		  state << 0, 0, 0, v, cte, epsi;          
 		  auto vars = mpc.Solve(state, coeffs);          
-		  steer_value = vars[0];          
-		  throttle_value = vars[1];
-
-		  
-
-		  
-		  
-          double steer_value;
-          double throttle_value;
+		  double steer_value = vars[0];          
+		  double throttle_value = vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
