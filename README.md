@@ -1,3 +1,87 @@
+# Introduction
+this project is the model predictive controller project from the udacity SDC course. the goal of the project is to control the vehicle driving itself along the track in the simulator with a model predictive control method.
+
+## Model
+### State
+the state variables contains px, py, psi, v and the errors cte and epsi.
+
+
+- px: the current position in x-axis of map coordinate
+- py: the current position in y-axis of map coordinate
+- psi: the heading angle of the vehicle 
+- v: the current velocity of the vehicle
+- cte: the cross track error between the desired position and the actual position at px = 0
+- epsi: the heading angle error between the desired heading angle with the actual heading angle at px = 0
+
+### Actuator
+there are two actuators which we can use to control the vehicle in the project.
+
+- delta: this is the steering value which can be used to control the steering angle of the vehicle. the delta is restricted to [-25 degree, 25 degree], in order to make the control easily, the value has been mapped to [-1, 1].
+- a: this is the longitudinal control command the vehicle, positive means accelerate and negative means decelerate.
+### Update Equation
+the kinematic model is used here to predict the future state t+1 based on the current state t.
+
+		//x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt      
+		// y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt      
+		// psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt      
+		// v_[t+1] = v[t] + a[t] * dt      
+		// cte[t+1] = cte[t] + v[t] * sin(epsi[t]) * dt      
+		// epsi[t+1] = epsi[t] + v[t] * delta[t] / Lf * dt
+
+
+## Timestep Length and Duration (N & dt)
+the timestep length N, we can say it is the steps which predicted for the future, if N is too small, then the predict horizon is too short, which makes the control erratic; although that N is bigger, then it can predict more, but it will also increase the calculation a bit. with the experiment, I set the N as 10.
+
+for the dt, I set it to 0.1s, same as the latency, which makes it easy during handling the latency.
+
+
+## Polynomial fit and MPC pre-processing
+
+
+		  for (int i =0; i < ptsx.size(); i++ )
+		  {
+			double dx = ptsx[i] - px;            
+		    double dy = ptsy[i] - py;
+
+			waypoints_x[i] = dx * cos(-psi) - dy * sin(-psi);
+			waypoints_y[i] = dx * sin(-psi) + dy * cos(-psi);
+		  }
+
+after the waypoints transfer from global map coordinate to ego vehicle coordinate, I use a 3 order polynomial to fit points.
+
+## Model Predictive control with latency
+the 100ms latency time has been considered during the model predictive control. it has been considered during the constraint setup. the steering command and the longitudinal command a0 has been delayed with one cycle if the predictive step t > 1, since the dt is defined as 0.1s, which time for one cycle is equal to the latency time.
+
+		AD<double> a0 = vars[a_start + t - 1];  
+		if (t > 1) {   // consider for actuator latency
+        	a0 = vars[a_start + t - 2];
+        	delta0 = vars[delta_start + t - 2];
+        }
+
+
+additionally for the cost function calculation, besides all the cost which has been used in the quiz of the lesson, I additionally add one combination of the speed and steering value, to make sure that speed and steering value will not been very at the same time, since it will lead erratic control if both of the values are too big.
+below is how the cost function has been calculated:
+
+	for (unsigned int t = 0; t < N; t++) {      
+		fg[0] += 200*CppAD::pow(vars[cte_start + t], 2);      
+		fg[0] += 200*CppAD::pow(vars[epsi_start + t], 2);      
+		fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);    
+		}   
+	
+	// Minimize the use of actuators.    
+	for (unsigned int t = 0; t < N - 1; t++) {      
+		fg[0] += 100*CppAD::pow(vars[delta_start + t], 2);      
+		fg[0] += 5*CppAD::pow(vars[a_start + t], 2);   
+
+		// put the multiplied value of speed and steering into cost value consideration
+		fg[0] += 200*CppAD::pow(vars[delta_start + t]*vars[v_start + t], 2);
+		}    
+	// Minimize the value gap between sequential actuations.    
+	for (unsigned int t = 0; t < N - 2; t++) {      
+		fg[0] += 200*CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);      
+		fg[0] += 10*CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);    
+		}
+
 # CarND-Controls-MPC
 Self-Driving Car Engineer Nanodegree Program
 
